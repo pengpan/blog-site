@@ -1,25 +1,2 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
-  <channel>
-    <title>Tags on Notepadium</title>
-    <link>http://blog.dcode.top/tags/</link>
-    <description>Recent content in Tags on Notepadium</description>
-    <generator>Hugo -- gohugo.io</generator>
-    <language>zh-cn</language>
-    <copyright>©2021 Notepadium.</copyright>
-    
-        <atom:link href="http://blog.dcode.top/tags/index.xml" rel="self" type="application/rss+xml" />
-    
-    
-    <item>
-      <title>My First Blog</title>
-      <link>http://blog.dcode.top/posts/my-first-blog/</link>
-      <pubDate>Tue, 24 Aug 2021 21:28:40 +0800</pubDate>
-      
-      <guid>http://blog.dcode.top/posts/my-first-blog/</guid>
-      <description>&lt;h1 id=&#34;hello-world&#34;&gt;Hello World&lt;/h1&gt;
-&lt;h2 id=&#34;code-is-life&#34;&gt;code is life&lt;/h2&gt;
-</description>
-    </item>
-    
-  </channel>
-</rss>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Tags on Notepadium</title><link>http://blog.dcode.top/tags/</link><description>Recent content in Tags on Notepadium</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>©2021 Notepadium.</copyright><atom:link href="http://blog.dcode.top/tags/index.xml" rel="self" type="application/rss+xml"/><item><title>My First Blog</title><link>http://blog.dcode.top/posts/my-first-blog/</link><pubDate>Tue, 24 Aug 2021 21:28:40 +0800</pubDate><guid>http://blog.dcode.top/posts/my-first-blog/</guid><description>&lt;h1 id="hello-world">Hello World&lt;/h1>
+&lt;h2 id="code-is-life">code is life&lt;/h2></description></item></channel></rss>
