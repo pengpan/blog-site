@@ -1,0 +1,88 @@
+<!doctype html><html lang=en><meta charset=utf-8><meta name=generator content="Hugo 0.87.0"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name=color-scheme content="light dark">
+<meta name=supported-color-schemes content="light dark"><title>使用VirtualBox安装CentOS7虚拟机&nbsp;&ndash;&nbsp;Notepadium</title><link rel=stylesheet href=/css/core.min.6391195f7c0920b53937f5eed2bfc37b11cb7bd13a9b537ad5c0ff9634c07539facf25b4d549fa7fff38dd1551201e55.css integrity=sha384-Y5EZX3wJILU5N/Xu0r/DexHLe9E6m1N61cD/ljTAdTn6zyW01Un6f/843RVRIB5V><meta name=twitter:card content="summary">
+<meta name=twitter:title content="使用VirtualBox安装CentOS7虚拟机"><body><section id=header>
+<div class="header wrap"><span class="header left-side"><a class="site home" href=/><span class="site name">Notepadium</span></a></span>
+<span class="header right-side"><div class="nav wrap"><nav class=nav><a class="nav item" href=/categories/>Categories</a><a class="nav item" href=/tags/>Tags</a><a class="nav item" href=/about>About</a><a class="nav item" href=https://gohugo%2eio/ target=_blank rel="noopener noreferrer">Hugo</a></nav></div></span></div><div class="site slogan"><span class=title>100% JavaScript-free</span></div></section><section id=content><div class=article-container><section class="article header">
+<h1 class="article title">使用VirtualBox安装CentOS7虚拟机</h1><p class="article date">Monday, September 3, 2018</p></section><article class="article markdown-body"><h3 id=前言>前言</h3>
+<p>现在大部分项目都是部署在Linux上，而我们开发环境一般是Windows和MacOS，在没有购买VPS的情况下，最好的方式就是在本地安装虚拟机了。网上的教程很多，但实际操作起来又不是那么回事，我之前有成功搭建过，并且设置了固定IP和联网，这里写一篇详细的教程，希望能帮助大家。</p>
+<h3 id=准备>准备</h3>
+<p>VirtualBox：<a href=https://www.virtualbox.org/wiki/Downloads target=_blank rel="noopener noreferrer">下载链接</a>
+CentOS7：<a href=http://archive.kernel.org/centos-vault/7.0.1406/isos/x86_64/CentOS-7.0-1406-x86_64-Minimal.iso target=_blank rel="noopener noreferrer">下载链接</a>
+这里CentOS7用的是Minimal版，体积很小，没有多余的软件，纯命令系统。</p>
+<h3 id=正文>正文</h3>
+<h4 id=新建虚拟机>新建虚拟机</h4>
+<p><img src=/images/install-centos7-in-virtualbox/QQ20180909-212503@2x.png alt>
+一路<code>Next</code>
+点击<code>设置->存储</code>选择下载的镜像<code>CentOS-7-x86_64-Minimal-1708.iso</code>
+<img src=/images/install-centos7-in-virtualbox/QQ20180903-224520@2x.png alt></p>
+<h4 id=完成安装>完成安装</h4>
+<p>点击面板上的<code>启动</code>按钮
+<img src=/images/install-centos7-in-virtualbox/QQ20180903-231040@2x.png alt>
+设置ROOT密码/存储位置等，完成配置，重启
+<img src=/images/install-centos7-in-virtualbox/QQ20180909-214025@2x.png alt></p>
+<h4 id=配置网络>配置网络</h4>
+<p>首先要获取宿主机的IP/网关/DNS</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1># windows</span>
+$ ipconfig
+
+<span class=c1># osx/linux</span>
+$ ifconfig
+</code></pre></div><h5 id=设置网络为桥连网络>设置网络为桥连网络</h5>
+<p>关机</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>$ shutdown -h now
+</code></pre></div><p>打开虚拟机所对应的设置，配置好桥连网络并启动
+<img src=/images/install-centos7-in-virtualbox/WX20180909-210529@2x.png alt></p>
+<h5 id=配置静态ipdns>配置静态IP/DNS</h5>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>$ vi /etc/sysconfig/network-scripts/ifcfg-enp0s3
+</code></pre></div><p>配置如下：</p>
+<pre><code class=language-properties data-lang=properties>HWADDR=08:00:27:8D:90:F4
+TYPE=Ethernet
+BOOTPROTO=static        #静态IP
+DEFROUTE=yes
+PEERDNS=yes
+PEERROUTES=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=yes
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_PEERDNS=yes
+IPV6_PEERROUTES=yes
+IPV6_FAILURE_FATAL=no
+NAME=enp0s3
+UUID=970a682c-0a14-4a74-a679-6cf19a09df85
+ONBOOT=yes              #开机启动
+
+IPADDR0=192.168.31.180  #固定IP，这里要注意和其他电脑不要冲突
+GATEWAY0=192.168.31.1   #网关
+DNS1=192.168.31.1       #跟“宿主机”的DNS服务器一样
+DNS2=8.8.8.8            #使用谷歌的DNS服务器
+</code></pre><p>配置完成后重启网卡</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>$ /etc/init.d/network restart
+</code></pre></div><p>能ping通<code>$ ping www.baidu.com</code>即配置成功</p>
+<h5 id=安装ssh>安装SSH</h5>
+<p>安装<code>openssh-server</code></p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>$ yum install -y openssh-server
+</code></pre></div><h5 id=测试>测试</h5>
+<p>宿主机用SSH进行连接</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>$ ssh root@192.168.31.180
+</code></pre></div><p>启动正常，且每次启动都会是相同的IP了</p>
+<h5 id=关闭防火墙>关闭防火墙</h5>
+<p>如果在虚拟机中部署了网站，要在宿主机上访问，这就需要关闭虚拟机的防火墙或者开放端口</p>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=c1># 查看防火墙状态</span>
+$ firewall-cmd --state
+
+<span class=c1># 重启防火墙</span>
+$ firewall-cmd --reload
+
+<span class=c1># 关闭防火墙</span>
+$ systemctl stop firewalld.service      <span class=c1>#停止firewall</span>
+$ systemctl disable firewalld.service   <span class=c1>#禁止firewall开机启动</span>
+</code></pre></div><p>至此，虚拟机安装的教程就到这里了，如果在安装过程中有什么疑问，可直接在下面评论</p>
+</article><section class="article labels"><a class=category href=/categories/linux/>linux</a><a class=tag href=/tags/centos/>centos</a></section>
+</div>
+<div class="article bottom"><section class="article navigation"><p><a class=link href=/posts/04-ngrok-tutorial/><span class="iconfont icon-article"></span>内网映射工具ngrok</a></p><p><a class=link href=/posts/02-hexo-deploy-vps/><span class="iconfont icon-article"></span>Hexo实现远程VPS自动部署</a></p></section></div></section><section id=footer><div class=footer-wrap>
+<p class=copyright>©2021 Notepadium.</p>
+<p class=powerby><span>Powered&nbsp;by&nbsp;</span><a href=https://gohugo.io target=_blank rel="noopener noreferrer">Hugo</a><span>&nbsp;&&nbsp;</span><a href=https://themes.gohugo.io/hugo-notepadium/ target=_blank rel="noopener noreferrer">Notepadium</a></p></div>
+</section></body>
+</html>

@@ -1,2 +1,604 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Categories on Notepadium</title><link>http://blog.dcode.top/categories/</link><description>Recent content in Categories on Notepadium</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>©2021 Notepadium.</copyright><atom:link href="http://blog.dcode.top/categories/index.xml" rel="self" type="application/rss+xml"/><item><title>My First Blog</title><link>http://blog.dcode.top/posts/my-first-blog/</link><pubDate>Tue, 24 Aug 2021 21:28:40 +0800</pubDate><guid>http://blog.dcode.top/posts/my-first-blog/</guid><description>&lt;h1 id="hello-world">Hello World&lt;/h1>
-&lt;h2 id="code-is-life">code is life&lt;/h2></description></item></channel></rss>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Categories on Notepadium</title><link>http://blog.dcode.top/categories/</link><description>Recent content in Categories on Notepadium</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>©2021 Notepadium.</copyright><lastBuildDate>Fri, 04 Jan 2019 14:14:00 +0000</lastBuildDate><atom:link href="http://blog.dcode.top/categories/index.xml" rel="self" type="application/rss+xml"/><item><title>Docker搭建Mysql PXC集群</title><link>http://blog.dcode.top/posts/11-mysql-cluster-docker/</link><pubDate>Fri, 04 Jan 2019 14:14:00 +0000</pubDate><guid>http://blog.dcode.top/posts/11-mysql-cluster-docker/</guid><description>&lt;h3 id="前言">前言&lt;/h3>
+&lt;blockquote>
+&lt;p>Mysql集群方案&lt;/p>
+&lt;/blockquote>
+&lt;ul>
+&lt;li>replication：速度快、弱一致性、数据同步单向，异步复制&lt;/li>
+&lt;li>pxc：速度慢、强一致性、数据同步双向，同步复制&lt;/li>
+&lt;/ul>
+&lt;h3 id="正文">正文&lt;/h3>
+&lt;h4 id="如何创建mysql的pxc集群">如何创建MySQL的PXC集群&lt;/h4>
+&lt;ol>
+&lt;li>下载PXC集群镜像文件&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1"># 下载&lt;/span>
+$ docker pull percona/percona-xtradb-cluster
+&lt;span class="c1"># 重命名&lt;/span>
+$ docker tag docker.io/percona/percona-xtradb-cluster pxc
+&lt;/code>&lt;/pre>&lt;/div>&lt;ol start="2">
+&lt;li>创建内部网络
+处于安全考虑，需要给PXC集群实例创建Docker内部网络&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ docker network create --subnet&lt;span class="o">=&lt;/span>172.96.0.0/24 net1
+&lt;/code>&lt;/pre>&lt;/div>&lt;ol start="3">
+&lt;li>查看网段&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ docker network inspect net1
+&lt;/code>&lt;/pre>&lt;/div>&lt;ol start="4">
+&lt;li>创建Docker卷
+&amp;ndash;name：设置卷名，可以不写&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ docker volume create --name v1
+$ docker volume create --name v2
+$ docker volume create --name v3
+$ docker volume create --name v4
+$ docker volume create --name v5
+&lt;/code>&lt;/pre>&lt;/div>&lt;ol start="5">
+&lt;li>创建PXC容器&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ docker run &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-p 3306:3306 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-v v1:/var/lib/mysql &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-e &lt;span class="nv">MYSQL_ROOT_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>abc123456 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-e &lt;span class="nv">CLUSTER_NAME&lt;/span>&lt;span class="o">=&lt;/span>PXC &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-e &lt;span class="nv">XTRABACKUP_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>abc123456 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--privileged &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--name&lt;span class="o">=&lt;/span>node1 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--net&lt;span class="o">=&lt;/span>net1 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--ip 172.96.0.2 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-d pxc
+$ docker run &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-p 3307:3306 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-v v2:/var/lib/mysql &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-e &lt;span class="nv">MYSQL_ROOT_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>abc123456 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-e &lt;span class="nv">CLUSTER_NAME&lt;/span>&lt;span class="o">=&lt;/span>PXC &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-e &lt;span class="nv">XTRABACKUP_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>abc123456 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--privileged &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--name&lt;span class="o">=&lt;/span>node2 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--net&lt;span class="o">=&lt;/span>net1 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--ip 172.96.0.3 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-d pxc
+$ docker run &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-p 3308:3306 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-v v3:/var/lib/mysql &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-e &lt;span class="nv">MYSQL_ROOT_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>abc123456 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-e &lt;span class="nv">CLUSTER_NAME&lt;/span>&lt;span class="o">=&lt;/span>PXC &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-e &lt;span class="nv">XTRABACKUP_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>abc123456 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--privileged &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--name&lt;span class="o">=&lt;/span>node3 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--net&lt;span class="o">=&lt;/span>net1 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--ip 172.96.0.4 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-d pxc
+$ docker run &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-p 3309:3306 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-v v4:/var/lib/mysql &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-e &lt;span class="nv">MYSQL_ROOT_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>abc123456 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-e &lt;span class="nv">CLUSTER_NAME&lt;/span>&lt;span class="o">=&lt;/span>PXC &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-e &lt;span class="nv">XTRABACKUP_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>abc123456 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--privileged &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--name&lt;span class="o">=&lt;/span>node4 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--net&lt;span class="o">=&lt;/span>net1 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--ip 172.96.0.5 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-d pxc
+$ docker run &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-p 3310:3306 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-v v5:/var/lib/mysql &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-e &lt;span class="nv">MYSQL_ROOT_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>abc123456 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-e &lt;span class="nv">CLUSTER_NAME&lt;/span>&lt;span class="o">=&lt;/span>PXC &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-e &lt;span class="nv">XTRABACKUP_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>abc123456 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--privileged &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--name&lt;span class="o">=&lt;/span>node5 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--net&lt;span class="o">=&lt;/span>net1 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>--ip 172.96.0.6 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span>-d pxc
+---分割线---
+参数解释：
+-d：表示后台运行
+-v：映射Docker卷到容器的mysql数据目录
+MYSQL_ROOT_PASSWORD：表示创建的数据库密码
+CLUSTER_NAME：表示创建出的集群名字
+XTRABACKUP_PASSWORD：表示集群通信密码
+--privileged：表示分配最高权限
+--net：指定网段
+--ip：指定IP
+&lt;/code>&lt;/pre>&lt;/div>&lt;pre>&lt;code>5个节点创建完成后，可以用MySQL客户端连接进行测试，在任一个mysql节点进行操作，都会同步到其他四个节点
+&lt;/code>&lt;/pre>
+&lt;h4 id="如何创建mysql的replication集群">如何创建MySQL的replication集群&lt;/h4>
+&lt;ol>
+&lt;li>Start master&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ docker run &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> --name mysql_master &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -p 3311:3306 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -v /data/mastermysql:/var/lib/mysql &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="nv">MYSQL_ROOT_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>mysqlroot &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="nv">MYSQL_USER&lt;/span>&lt;span class="o">=&lt;/span>example_user &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="nv">MYSQL_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>mysqlpwd &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="nv">MYSQL_DATABASE&lt;/span>&lt;span class="o">=&lt;/span>example &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="nv">REPLICATION_USER&lt;/span>&lt;span class="o">=&lt;/span>replication_user &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="nv">REPLICATION_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>myreplpassword &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -d actency/docker-mysql-replication:5.7
+&lt;/code>&lt;/pre>&lt;/div>&lt;ol start="2">
+&lt;li>Start slave&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ docker run &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> --name mysql_slave &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -p 3312:3306 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -v /data/slavemysql:/var/lib/mysql &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="nv">MYSQL_ROOT_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>root &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="nv">MYSQL_USER&lt;/span>&lt;span class="o">=&lt;/span>example_user &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="nv">MYSQL_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>mysqlpwd &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="nv">MYSQL_DATABASE&lt;/span>&lt;span class="o">=&lt;/span>example &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="nv">REPLICATION_USER&lt;/span>&lt;span class="o">=&lt;/span>replication_user &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="nv">REPLICATION_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>myreplpassword &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> --link mysql_master:master &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -d actency/docker-mysql-replication:5.7
+&lt;/code>&lt;/pre>&lt;/div>&lt;ol start="3">
+&lt;li>Check replication status&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ docker &lt;span class="nb">exec&lt;/span> -it mysql_slave mysql -uroot -pmysqlroot -e &lt;span class="s2">&amp;#34;SHOW SLAVE STATUS\G;&amp;#34;&lt;/span>
+&lt;/code>&lt;/pre>&lt;/div></description></item><item><title>利用kcptun加速你的SSR</title><link>http://blog.dcode.top/posts/10-ssr-use-kcptun/</link><pubDate>Sun, 30 Dec 2018 22:30:00 +0000</pubDate><guid>http://blog.dcode.top/posts/10-ssr-use-kcptun/</guid><description>&lt;h3 id="前言">前言&lt;/h3>
+&lt;blockquote>
+&lt;p>Kcptun介绍&lt;/p>
+&lt;/blockquote>
+&lt;ul>
+&lt;li>Kcptun 是一个非常简单和快速的，基于 KCP 协议的 UDP 隧道，它可以将 TCP 流转换为 KCP+UDP 流。而 KCP 是一个快速可靠协议，能以比 TCP 浪费10%-20%的带宽的代价，换取平均延迟降低 30%-40%，且最大延迟降低三倍的传输效果。&lt;/li>
+&lt;li>Kcptun 是 KCP 协议的一个简单应用，可以用于任意 TCP 网络程序的传输承载，以提高网络流畅度，降低掉线情况。由于Kcptun 使用 Go 语言编写，内存占用低（经测试，在64M内存服务器上稳定运行），而且适用于所有平台，甚至 Arm 平台。&lt;/li>
+&lt;/ul>
+&lt;blockquote>
+&lt;p>Kcptun工作示意图&lt;/p>
+&lt;/blockquote>
+&lt;p>&lt;img src="http://blog.dcode.top/images/ssr-use-kcptun/kcptun.png"
+alt/>&lt;/p>
+&lt;blockquote>
+&lt;p>KCP 协议：&lt;a href="https://github.com/skywind3000/kcp"target="_blank" rel="noopener noreferrer">https://github.com/skywind3000/kcp&lt;/a>
+Kcptun 项目地址：&lt;a href="https://github.com/xtaci/kcptun"target="_blank" rel="noopener noreferrer">https://github.com/xtaci/kcptun&lt;/a>
+&lt;/p>
+&lt;/blockquote>
+&lt;h3 id="正文">正文&lt;/h3>
+&lt;h4 id="kcptun服务端配置">kcptun服务端配置&lt;/h4>
+&lt;p>服务器操作系统: CentOS7
+需先安装好Shadowsocks服务端，并启动它&lt;/p>
+&lt;ul>
+&lt;li>一键脚本安装&lt;/li>
+&lt;/ul>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ wget --no-check-certificate https://github.com/kuoruan/shell-scripts/raw/master/kcptun/kcptun.sh
+$ chmod +x ./kcptun.sh
+$ ./kcptun.sh
+&lt;/code>&lt;/pre>&lt;/div>&lt;ul>
+&lt;li>保存客户端配置文件&lt;/li>
+&lt;/ul>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">可使用的客户端配置文件为:
+&lt;span class="o">{&lt;/span>
+&lt;span class="s2">&amp;#34;localaddr&amp;#34;&lt;/span>: &lt;span class="s2">&amp;#34;:11226&amp;#34;&lt;/span>,
+&lt;span class="s2">&amp;#34;remoteaddr&amp;#34;&lt;/span>: &lt;span class="s2">&amp;#34;0.0.0.0:29900&amp;#34;&lt;/span>,
+&lt;span class="s2">&amp;#34;key&amp;#34;&lt;/span>: &lt;span class="s2">&amp;#34;xxxxx&amp;#34;&lt;/span>,
+&lt;span class="s2">&amp;#34;crypt&amp;#34;&lt;/span>: &lt;span class="s2">&amp;#34;aes&amp;#34;&lt;/span>,
+&lt;span class="s2">&amp;#34;mode&amp;#34;&lt;/span>: &lt;span class="s2">&amp;#34;fast&amp;#34;&lt;/span>,
+&lt;span class="s2">&amp;#34;mtu&amp;#34;&lt;/span>: 1350,
+&lt;span class="s2">&amp;#34;sndwnd&amp;#34;&lt;/span>: 512,
+&lt;span class="s2">&amp;#34;rcvwnd&amp;#34;&lt;/span>: 512,
+&lt;span class="s2">&amp;#34;datashard&amp;#34;&lt;/span>: 10,
+&lt;span class="s2">&amp;#34;parityshard&amp;#34;&lt;/span>: 3,
+&lt;span class="s2">&amp;#34;dscp&amp;#34;&lt;/span>: 0,
+&lt;span class="s2">&amp;#34;nocomp&amp;#34;&lt;/span>: false,
+&lt;span class="s2">&amp;#34;quiet&amp;#34;&lt;/span>: &lt;span class="nb">false&lt;/span>
+&lt;span class="o">}&lt;/span>
+&lt;/code>&lt;/pre>&lt;/div>&lt;pre>&lt;code>如果忘记了，可使用命令`./kcptun.sh show`再次查看
+&lt;/code>&lt;/pre>
+&lt;h4 id="kcptun客户端配置">kcptun客户端配置&lt;/h4>
+&lt;h5 id="windows">windows&lt;/h5>
+&lt;ol>
+&lt;li>下载&lt;a href="https://9527.blog/kcptun/kcptun-windows-client-20181230.zip"target="_blank" rel="noopener noreferrer">windows客户端&lt;/a>
+&lt;/li>
+&lt;li>配置客户端&lt;/li>
+&lt;li>将服务端生成的客户端配置粘贴到&lt;code>kcptun.json&lt;/code>中&lt;/li>
+&lt;li>运行&lt;code>kcptun_gclient.exe&lt;/code>&lt;/li>
+&lt;li>添加客户端&lt;code>client_windows_amd64.exe&lt;/code>，勾选使用配置文件，选择&lt;code>kcptun.json&lt;/code>&lt;/li>
+&lt;li>启动
+&lt;img src="http://blog.dcode.top/images/ssr-use-kcptun/kcptun_client_config.png"
+alt/>&lt;/li>
+&lt;li>配置Shadowsocks客户端
+&lt;img src="http://blog.dcode.top/images/ssr-use-kcptun/ss_config.png"
+alt/>&lt;/li>
+&lt;/ol>
+&lt;h5 id="macos">macos&lt;/h5>
+&lt;ol>
+&lt;li>下载&lt;a href="https://9527.blog/kcptun/kcptun-darwin-client-20181230.zip"target="_blank" rel="noopener noreferrer">macos客户端&lt;/a>
+&lt;/li>
+&lt;li>配置客户端&lt;/li>
+&lt;li>将服务端生成的客户端配置粘贴到&lt;code>kcptun.json&lt;/code>中&lt;/li>
+&lt;li>运行&lt;code>./client_darwin_amd64 -c kcptun.json&lt;/code>&lt;/li>
+&lt;li>配置Shadowsocks客户端（同上）&lt;/li>
+&lt;/ol>
+&lt;h4 id="效果对比">效果对比&lt;/h4>
+&lt;h5 id="开启前">开启前&lt;/h5>
+&lt;p>&lt;img src="http://blog.dcode.top/images/ssr-use-kcptun/disable_kcptun.jpg"
+alt/>&lt;/p>
+&lt;h5 id="开启后">开启后&lt;/h5>
+&lt;p>&lt;img src="http://blog.dcode.top/images/ssr-use-kcptun/enable_kcptun.jpg"
+alt/>&lt;/p>
+&lt;h5 id="效果提升显著">效果提升显著&lt;/h5>
+&lt;h4 id="参考文档">参考文档&lt;/h4>
+&lt;p>&lt;a href="https://blog.kuoruan.com/110.html"target="_blank" rel="noopener noreferrer">[v20]Kcptun 服务端一键安装脚本&lt;/a>
+&lt;a href="http://blog.51cto.com/gordy/1974673"target="_blank" rel="noopener noreferrer">shadowsocks安装kcptun加速&lt;/a>
+&lt;/p></description></item><item><title>利用chevereto在VPS上搭建私有图床</title><link>http://blog.dcode.top/posts/09-build-private-graph-bed/</link><pubDate>Sun, 02 Dec 2018 19:30:00 +0000</pubDate><guid>http://blog.dcode.top/posts/09-build-private-graph-bed/</guid><description>&lt;h3 id="前言">前言&lt;/h3>
+&lt;p>除了使用公共的图床，也可以使用VPS去搭建自己的个人图床。自建图床可以存储自己收藏的图片，也可以创建一些加密的相册，这次要给你介绍的是 &lt;a href="https://chevereto.com"target="_blank" rel="noopener noreferrer">Chevereto&lt;/a>
+这款超高颜值的图床程序。它可以非常简便的上传图片（支持多图上传）并自动生成代码链接供其他程序引用，支持使用外部储存，开放用户注册上传等。&lt;/p>
+&lt;h3 id="正文">正文&lt;/h3>
+&lt;h4 id="传统方式搭建">传统方式搭建&lt;/h4>
+&lt;p>传统方式比较繁琐，这里推荐&lt;a href="https://github.com/biezhi"target="_blank" rel="noopener noreferrer">biezhi&lt;/a>
+的教程&lt;a href="https://gist.github.com/biezhi/f90923b48863c7d745481ccdd678ccab"target="_blank" rel="noopener noreferrer">自建图床chevereto&lt;/a>
+&lt;/p>
+&lt;h4 id="使用docker搭建">使用Docker搭建&lt;/h4>
+&lt;h5 id="首先需要准备mysqlhttpshubdockercomrlibrarymysql环境">首先需要准备&lt;a href="https://hub.docker.com/r/library/mysql/"target="_blank" rel="noopener noreferrer">mysql&lt;/a>
+环境&lt;/h5>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ docker run &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> --name mysql &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="nv">MYSQL_ROOT_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>my-secret-pw &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="nv">MYSQL_DATABASE&lt;/span>&lt;span class="o">=&lt;/span>chevereto &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="nv">MYSQL_USER&lt;/span>&lt;span class="o">=&lt;/span>chevereto &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="nv">MYSQL_PASSWORD&lt;/span>&lt;span class="o">=&lt;/span>chevereto &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -d mysql:5.7 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> --character-set-server&lt;span class="o">=&lt;/span>utf8mb4 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> --collation-server&lt;span class="o">=&lt;/span>utf8mb4_unicode_ci
+&lt;/code>&lt;/pre>&lt;/div>&lt;h5 id="然后运行cheveretohttpshubdockercomrnmtanchevereto官方镜像">然后运行&lt;a href="https://hub.docker.com/r/nmtan/chevereto/"target="_blank" rel="noopener noreferrer">chevereto&lt;/a>
+官方镜像&lt;/h5>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ docker run -it --name chevereto -d &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> --link mysql:mysql &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -p 80:80 &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -v &lt;span class="s2">&amp;#34;&lt;/span>&lt;span class="nv">$PWD&lt;/span>&lt;span class="s2">/images&amp;#34;&lt;/span>:/var/www/html/images &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="s2">&amp;#34;CHEVERETO_DB_HOST=&lt;/span>&lt;span class="k">$(&lt;/span>docker ps -f &lt;span class="s2">&amp;#34;name=mysql&amp;#34;&lt;/span> -aq&lt;span class="k">)&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span> &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="s2">&amp;#34;CHEVERETO_DB_USERNAME=chevereto&amp;#34;&lt;/span> &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="s2">&amp;#34;CHEVERETO_DB_PASSWORD=chevereto&amp;#34;&lt;/span> &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="s2">&amp;#34;CHEVERETO_DB_NAME=chevereto&amp;#34;&lt;/span> &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> -e &lt;span class="s2">&amp;#34;CHEVERETO_DB_PREFIX=chv_&amp;#34;&lt;/span> &lt;span class="se">\
+&lt;/span>&lt;span class="se">&lt;/span> nmtan/chevereto
+&lt;/code>&lt;/pre>&lt;/div>&lt;h5 id="小插曲">小插曲&lt;/h5>
+&lt;p>访问&lt;code>http://localhost&lt;/code>出现系统错误&lt;code>No write permission in /images/ directory. Chevereto needs to be able to write in this directory.&lt;/code>
+&lt;img src="http://blog.dcode.top/images/build-private-graph-bed/20181203122342.png"
+alt/>
+&lt;code>/images/&lt;/code>目录中没有写权限，解决方案:&lt;/p>
+&lt;ol>
+&lt;li>进入chevereto容器&lt;code>docker exec -it $(docker ps -f &amp;quot;name=chevereto&amp;quot; -aq) /bin/bash&lt;/code>&lt;/li>
+&lt;li>赋予&lt;code>/images/&lt;/code>目录写入权限&lt;code>chmod -R 222 /var/www/html/images/&lt;/code>&lt;/li>
+&lt;li>退出容器&lt;code>exit&lt;/code>
+刷新网页，填写管理员信息即可使用
+&lt;img src="http://blog.dcode.top/images/build-private-graph-bed/20181203122920.png"
+alt/>&lt;/li>
+&lt;/ol></description></item><item><title>Hexo通过jenkins实现自动部署</title><link>http://blog.dcode.top/posts/08-hexo-auto-deploy-by-jenkins/</link><pubDate>Mon, 15 Oct 2018 23:57:00 +0000</pubDate><guid>http://blog.dcode.top/posts/08-hexo-auto-deploy-by-jenkins/</guid><description>&lt;h3 id="前言">前言&lt;/h3>
+&lt;p>之前有写过一篇&lt;a href="http://blog.dcode.top/posts/63870.html">Hexo实现远程VPS自动部署&lt;/a>
+，其实这并不是真正意义上的自动部署，需要执行&lt;code>hexo deploy&lt;/code>，这里我们用jenkins和github来实现真正的自动部署，只需要提交代码到github仓库即自动构建发布。&lt;/p>
+&lt;h3 id="正文">正文&lt;/h3>
+&lt;h4 id="安装jenkins">安装jenkins&lt;/h4>
+&lt;p>首先得先安装jenkins，这里不作讲述&lt;/p>
+&lt;h4 id="创建jenkins任务">创建jenkins任务&lt;/h4>
+&lt;p>&lt;img src="http://blog.dcode.top/images/hexo-auto-deploy-by-jenkins/QQ20181015-224718@2x.png"
+alt/>
+填写源码地址
+&lt;img src="http://blog.dcode.top/images/hexo-auto-deploy-by-jenkins/QQ20181015-224901@2x.png"
+alt/>
+配置触发和构建脚本
+&lt;img src="http://blog.dcode.top/images/hexo-auto-deploy-by-jenkins/QQ20181016-004606@2x.png"
+alt/>
+shell 脚本&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="cp">#!/bin/bash -ilex
+&lt;/span>&lt;span class="cp">&lt;/span>
+yarn install
+hexo clean &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> hexo generate
+rm -rf /www/wwwroot/9527.blog/*
+cp -rf public/* /www/wwwroot/9527.blog/
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>脚本的含义是先将github仓库中拉取的代码编译成静态html，然后再替换到站点目录&lt;/p>
+&lt;h4 id="github配置">github配置&lt;/h4>
+&lt;p>添加webhook
+&lt;img src="http://blog.dcode.top/images/hexo-auto-deploy-by-jenkins/QQ20181015-230229@2x.png"
+alt/>
+Payload URL为jenkins地址加上&lt;code>/github-webhook/&lt;/code>，最后的那根&lt;code>/&lt;/code>不能丢
+&lt;img src="http://blog.dcode.top/images/hexo-auto-deploy-by-jenkins/QQ20181015-234700@2x.png"
+alt/>&lt;/p>
+&lt;h4 id="配置完成">配置完成&lt;/h4>
+&lt;p>修改github仓库代码，自动触发构建
+&lt;img src="http://blog.dcode.top/images/hexo-auto-deploy-by-jenkins/QQ20181015-235031@2x.png"
+alt/>&lt;/p></description></item><item><title>内网映射工具frp</title><link>http://blog.dcode.top/posts/07-frp-tutorial/</link><pubDate>Thu, 11 Oct 2018 22:21:00 +0000</pubDate><guid>http://blog.dcode.top/posts/07-frp-tutorial/</guid><description>&lt;h3 id="前言">前言&lt;/h3>
+&lt;p>之前有写过一篇&lt;a href="http://blog.dcode.top/posts/44878.html">内网映射工具ngrok&lt;/a>
+，但是ngrok的速度不是很快，而且每次启动的生成二级域名都会变化，要长期使用不是很方便，下面介绍一款稳定快速的内网映射工具frp&lt;/p>
+&lt;blockquote>
+&lt;p>frp是国内大神写的开源作品，目前start接近16K
+开源地址：&lt;a href="https://github.com/fatedier/frp"target="_blank" rel="noopener noreferrer">https://github.com/fatedier/frp&lt;/a>
+中文文档：&lt;a href="https://github.com/fatedier/frp/blob/master/README_zh.md"target="_blank" rel="noopener noreferrer">https://github.com/fatedier/frp/blob/master/README_zh.md&lt;/a>
+&lt;/p>
+&lt;/blockquote>
+&lt;h3 id="正文">正文&lt;/h3>
+&lt;h4 id="配置服务端">配置服务端&lt;/h4>
+&lt;p>首先在服务机(需要外网能访问)下载对应系统的&lt;a href="https://github.com/fatedier/frp/releases"target="_blank" rel="noopener noreferrer">软件包&lt;/a>
+，解压并编辑&lt;code>frps.ini&lt;/code>文件
+如果官方软件包下载慢，可使用以下链接下载：
+windows：&lt;a href="https://9527.blog/frp/windows/frp_0.21.0_windows_amd64.zip"target="_blank" rel="noopener noreferrer">下载链接&lt;/a>
+osx：&lt;a href="https://9527.blog/frp/osx/frp_0.21.0_darwin_amd64.tar.gz"target="_blank" rel="noopener noreferrer">下载链接&lt;/a>
+linux：&lt;a href="https://9527.blog/frp/linux/frp_0.21.0_linux_amd64.tar.gz"target="_blank" rel="noopener noreferrer">下载链接&lt;/a>
+&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1"># frps.ini&lt;/span>
+&lt;span class="o">[&lt;/span>common&lt;span class="o">]&lt;/span>
+&lt;span class="nv">bind_port&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="m">7000&lt;/span>
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>启动&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ nohup ./frps -c ./frps.ini &lt;span class="p">&amp;amp;&lt;/span>
+&lt;/code>&lt;/pre>&lt;/div>&lt;h4 id="配置客户端">配置客户端&lt;/h4>
+&lt;p>同样在客户机(内网)下载对应系统的软件包，解压并编辑&lt;code>frpc.ini&lt;/code>文件&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1"># frpc.ini&lt;/span>
+&lt;span class="o">[&lt;/span>common&lt;span class="o">]&lt;/span>
+&lt;span class="nv">server_addr&lt;/span> &lt;span class="o">=&lt;/span> x.x.x.x
+&lt;span class="nv">server_port&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="m">7000&lt;/span>
+&lt;span class="o">[&lt;/span>ssh&lt;span class="o">]&lt;/span>
+&lt;span class="nb">type&lt;/span> &lt;span class="o">=&lt;/span> tcp
+&lt;span class="nv">local_ip&lt;/span> &lt;span class="o">=&lt;/span> 127.0.0.1
+&lt;span class="nv">local_port&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="m">22&lt;/span>
+&lt;span class="nv">remote_port&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="m">6000&lt;/span>
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>注：x.x.x.x为服务机公网IP
+启动&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ nohup ./frpc -c ./frpc.ini &lt;span class="p">&amp;amp;&lt;/span>
+&lt;/code>&lt;/pre>&lt;/div>&lt;h4 id="通过ssh访问内网机器">通过ssh访问内网机器&lt;/h4>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ ssh -oPort&lt;span class="o">=&lt;/span>&lt;span class="m">6000&lt;/span> root@x.x.x.x
+&lt;/code>&lt;/pre>&lt;/div>&lt;h4 id="结束语">结束语&lt;/h4>
+&lt;p>frp的功能远不止这些，更多配置请查看&lt;a href="https://github.com/fatedier/frp/blob/master/README_zh.md"target="_blank" rel="noopener noreferrer">官方文档&lt;/a>
+&lt;/p></description></item><item><title>SpringBoot使用jasypt加密配置文件</title><link>http://blog.dcode.top/posts/06-springboot-jasypt-encryptor/</link><pubDate>Fri, 28 Sep 2018 19:57:00 +0000</pubDate><guid>http://blog.dcode.top/posts/06-springboot-jasypt-encryptor/</guid><description>&lt;h3 id="前言">前言&lt;/h3>
+&lt;p>使用过SpringBoot配置文件的朋友都知道，资源文件中的内容通常情况下是明文显示，安全性就比较低一些。打开application.properties或application.yml，比如mysql登陆密码，redis登陆密码以及第三方的密钥等等一览无余，这里介绍一个加解密组件，提高一些属性配置的安全性。&lt;/p>
+&lt;h3 id="正文">正文&lt;/h3>
+&lt;blockquote>
+&lt;p>jasypt由一个国外大神写了一个springboot下的工具包
+开源地址：&lt;a href="https://github.com/ulisesbocchio/jasypt-spring-boot"target="_blank" rel="noopener noreferrer">https://github.com/ulisesbocchio/jasypt-spring-boot&lt;/a>
+&lt;/p>
+&lt;/blockquote>
+&lt;h4 id="maven依赖">Maven依赖&lt;/h4>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-xml" data-lang="xml">&lt;span class="nt">&amp;lt;dependency&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;groupId&amp;gt;&lt;/span>com.github.ulisesbocchio&lt;span class="nt">&amp;lt;/groupId&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;artifactId&amp;gt;&lt;/span>jasypt-spring-boot-starter&lt;span class="nt">&amp;lt;/artifactId&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;version&amp;gt;&lt;/span>2.1.0&lt;span class="nt">&amp;lt;/version&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;/dependency&amp;gt;&lt;/span>
+&lt;/code>&lt;/pre>&lt;/div>&lt;h4 id="配置加密参数">配置加密参数&lt;/h4>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="nt">jasypt&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">encryptor&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">password&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">MasterPan&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="c">#可以是任意字符&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h3 id="使用加密">使用加密&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="nt">datasource&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">type&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">com.alibaba.druid.pool.DruidDataSource&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">driver-class-name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">com.mysql.jdbc.Driver&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">url&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">jdbc:mysql://localhost:3306/test?useUnicode=true&amp;amp;characterEncoding=utf8&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">username&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">root&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">password&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">ENC(BfsoZM9dAAU4lVp+pE47Y/0N9fqcci1A)&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>注：&lt;code>ENC(BfsoZM9dAAU4lVp+pE47Y/0N9fqcci1A)&lt;/code>为加密后的密码&lt;/p>
+&lt;h3 id="生成密文">生成密文&lt;/h3>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-java" data-lang="java">&lt;span class="nd">@RunWith&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">SpringRunner&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">)&lt;/span>
+&lt;span class="nd">@SpringBootTest&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">ApplicationTests&lt;/span> &lt;span class="o">{&lt;/span>
+&lt;span class="nd">@Autowired&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="n">StringEncryptor&lt;/span> &lt;span class="n">stringEncryptor&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="nd">@Test&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">contextLoads&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">{&lt;/span>
+&lt;span class="n">String&lt;/span> &lt;span class="n">password&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s">&amp;#34;123456&amp;#34;&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="n">System&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">out&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">println&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">String&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">format&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;ENC(%s)&amp;#34;&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">stringEncryptor&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">encrypt&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">password&lt;/span>&lt;span class="o">)));&lt;/span>
+&lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>将生成的密文替换明文即可，简单四步完成加密。&lt;/p></description></item><item><title>Nginx常用配置笔记</title><link>http://blog.dcode.top/posts/05-nginx-config-note/</link><pubDate>Sat, 15 Sep 2018 13:00:00 +0000</pubDate><guid>http://blog.dcode.top/posts/05-nginx-config-note/</guid><description>&lt;h4 id="防止恶意解析">防止恶意解析&lt;/h4>
+&lt;pre>&lt;code>server {
+listen 80 default_server;
+server_name _;
+return 403;
+}
+server {
+listen 443 default_server;
+server_name _;
+ssl on;
+ssl_certificate cert/fullchain.pem;
+ssl_certificate_key cert/privkey.pem;
+return 403;
+}
+&lt;/code>&lt;/pre>&lt;h4 id="开启压缩">开启压缩&lt;/h4>
+&lt;pre>&lt;code>gzip on;
+gzip_min_length 1k;
+gzip_buffers 4 16k;
+gzip_http_version 1.1;
+gzip_comp_level 5;
+gzip_types text/plain application/javascript application/x-javascript text/javascript text/css application/xml image/jpeg image/gif image/png;
+gzip_vary on;
+gzip_proxied expired no-cache no-store private auth;
+gzip_disable &amp;quot;MSIE [1-6]\.&amp;quot;;
+&lt;/code>&lt;/pre>&lt;h4 id="去掉www">去掉www&lt;/h4>
+&lt;pre>&lt;code>if ($host ~ '^www.9527.blog'){
+return 301 https://9527.blog$request_uri;
+}
+&lt;/code>&lt;/pre>&lt;h4 id="强制https">强制https&lt;/h4>
+&lt;pre>&lt;code>if ($server_port !~ 443){
+rewrite ^(/.*)$ https://$host$1 permanent;
+}
+&lt;/code>&lt;/pre>&lt;h4 id="静态资源配置">静态资源配置&lt;/h4>
+&lt;pre>&lt;code>location ~ .*\.(gif|jpg|jpeg|png|bmp|swf)$
+{
+expires 30d;
+error_log off;
+access_log off;
+}
+location ~ .*\.(js|css)?$
+{
+expires 12h;
+error_log off;
+access_log off;
+}
+&lt;/code>&lt;/pre>&lt;h4 id="防盗链配置">防盗链配置&lt;/h4>
+&lt;pre>&lt;code>location ~ .*\.(jpg|jpeg|gif|png|js|css)$
+{
+expires 30d;
+access_log off;
+valid_referers none blocked 9527.blog www.9527.blog;
+if ($invalid_referer){
+rewrite ^/ https://9527.blog;
+#return 404;
+}
+}
+&lt;/code>&lt;/pre>&lt;h4 id="禁止访问的文件或目录">禁止访问的文件或目录&lt;/h4>
+&lt;pre>&lt;code>location ~ ^/(\.user.ini|\.htaccess|\.git|\.svn|\.project|LICENSE|README.md)
+{
+return 404;
+}
+&lt;/code>&lt;/pre>&lt;h4 id="文件服务器">文件服务器&lt;/h4>
+&lt;pre>&lt;code>location ~ .*\.(exe|dmg|zip|apk)$ {
+root /www/wwwroot/files;
+expires -1;
+}
+&lt;/code>&lt;/pre>&lt;h4 id="流量控制">流量控制&lt;/h4>
+&lt;pre>&lt;code>limit_conn perserver 500; #限制当前站点最大并发数
+limit_conn perip 10; #限制单个IP访问最大并发数
+limit_rate 2048k; #限制每个请求的流量上限（单位：KB）
+&lt;/code>&lt;/pre>&lt;p>本文为经验总结，如有不详之处，请参阅文档
+&lt;a href="http://nginx.org/en/docs/"target="_blank" rel="noopener noreferrer">官方文档&lt;/a>
+&lt;a href="http://www.nginx.cn/doc/"target="_blank" rel="noopener noreferrer">Nginx中文文档&lt;/a>
+&lt;a href="https://tengine.taobao.org/nginx_docs/cn/docs/"target="_blank" rel="noopener noreferrer">Nginx官方文档中文版&lt;/a>
+&lt;/p>
+&lt;p>最后，推荐大家一个网站&lt;a href="https://nginxconfig.io/"target="_blank" rel="noopener noreferrer">nginxconfig.io&lt;/a>
+，上面有很多配置好了的nginx模板&lt;/p></description></item><item><title>内网映射工具ngrok</title><link>http://blog.dcode.top/posts/04-ngrok-tutorial/</link><pubDate>Tue, 04 Sep 2018 11:12:00 +0000</pubDate><guid>http://blog.dcode.top/posts/04-ngrok-tutorial/</guid><description>&lt;h3 id="前言">前言&lt;/h3>
+&lt;p>做过微信公众号开发的小伙伴就应该知道，微信必须要部署在外网才能调试，很是不方便，这就需要一款内网映射工具了，这里介绍&lt;a href="https://ngrok.com"target="_blank" rel="noopener noreferrer">ngrok&lt;/a>
+，有免费版，操作简单。&lt;/p>
+&lt;h3 id="准备">准备&lt;/h3>
+&lt;p>下载&lt;a href="https://ngrok.com/download"target="_blank" rel="noopener noreferrer">ngrok&lt;/a>
+，如果官网无法访问，可使用以下链接下载：
+windows：&lt;a href="https://9527.blog/ngrok/windows/ngrok-stable-windows-386.zip"target="_blank" rel="noopener noreferrer">下载链接&lt;/a>
+osx：&lt;a href="https://9527.blog/ngrok/osx/ngrok-stable-darwin-amd64.zip"target="_blank" rel="noopener noreferrer">下载链接&lt;/a>
+linux：&lt;a href="https://9527.blog/ngrok/linux/ngrok-stable-linux-amd64.zip"target="_blank" rel="noopener noreferrer">下载链接&lt;/a>
+&lt;/p>
+&lt;h3 id="正文">正文&lt;/h3>
+&lt;p>解压安装包到指定目录，cd到这个目录，执行&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1"># windows&lt;/span>
+$ ngrok.exe http &lt;span class="m">8080&lt;/span>
+&lt;span class="c1"># osx/linux&lt;/span>
+$ ./ngrok http &lt;span class="m">8080&lt;/span>
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>运行成功&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">ngrok by @inconshreveable &lt;span class="o">(&lt;/span>Ctrl+C to quit&lt;span class="o">)&lt;/span>
+Session Status online
+Session Expires &lt;span class="m">7&lt;/span> hours, &lt;span class="m">56&lt;/span> minutes
+Version 2.2.8
+Region United States &lt;span class="o">(&lt;/span>us&lt;span class="o">)&lt;/span>
+Web Interface http://127.0.0.1:4040
+Forwarding http://4983b8b1.ngrok.io -&amp;gt; localhost:8080
+Forwarding https://4983b8b1.ngrok.io -&amp;gt; localhost:8080
+Connections ttl opn rt1 rt5 p50 p90
+&lt;span class="m">0&lt;/span> &lt;span class="m">0&lt;/span> 0.00 0.00 0.00 0.00
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>外网访问&lt;code>http://4983b8b1.ngrok.io&lt;/code>，即访问内网&lt;code>http://localhost:8080&lt;/code>，端口可在命令中修改。&lt;/p></description></item><item><title>使用VirtualBox安装CentOS7虚拟机</title><link>http://blog.dcode.top/posts/03-install-centos7-in-virtualbox/</link><pubDate>Mon, 03 Sep 2018 22:13:00 +0000</pubDate><guid>http://blog.dcode.top/posts/03-install-centos7-in-virtualbox/</guid><description>&lt;h3 id="前言">前言&lt;/h3>
+&lt;p>现在大部分项目都是部署在Linux上，而我们开发环境一般是Windows和MacOS，在没有购买VPS的情况下，最好的方式就是在本地安装虚拟机了。网上的教程很多，但实际操作起来又不是那么回事，我之前有成功搭建过，并且设置了固定IP和联网，这里写一篇详细的教程，希望能帮助大家。&lt;/p>
+&lt;h3 id="准备">准备&lt;/h3>
+&lt;p>VirtualBox：&lt;a href="https://www.virtualbox.org/wiki/Downloads"target="_blank" rel="noopener noreferrer">下载链接&lt;/a>
+CentOS7：&lt;a href="http://archive.kernel.org/centos-vault/7.0.1406/isos/x86_64/CentOS-7.0-1406-x86_64-Minimal.iso"target="_blank" rel="noopener noreferrer">下载链接&lt;/a>
+这里CentOS7用的是Minimal版，体积很小，没有多余的软件，纯命令系统。&lt;/p>
+&lt;h3 id="正文">正文&lt;/h3>
+&lt;h4 id="新建虚拟机">新建虚拟机&lt;/h4>
+&lt;p>&lt;img src="http://blog.dcode.top/images/install-centos7-in-virtualbox/QQ20180909-212503@2x.png"
+alt/>
+一路&lt;code>Next&lt;/code>
+点击&lt;code>设置-&amp;gt;存储&lt;/code>选择下载的镜像&lt;code>CentOS-7-x86_64-Minimal-1708.iso&lt;/code>
+&lt;img src="http://blog.dcode.top/images/install-centos7-in-virtualbox/QQ20180903-224520@2x.png"
+alt/>&lt;/p>
+&lt;h4 id="完成安装">完成安装&lt;/h4>
+&lt;p>点击面板上的&lt;code>启动&lt;/code>按钮
+&lt;img src="http://blog.dcode.top/images/install-centos7-in-virtualbox/QQ20180903-231040@2x.png"
+alt/>
+设置ROOT密码/存储位置等，完成配置，重启
+&lt;img src="http://blog.dcode.top/images/install-centos7-in-virtualbox/QQ20180909-214025@2x.png"
+alt/>&lt;/p>
+&lt;h4 id="配置网络">配置网络&lt;/h4>
+&lt;p>首先要获取宿主机的IP/网关/DNS&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1"># windows&lt;/span>
+$ ipconfig
+&lt;span class="c1"># osx/linux&lt;/span>
+$ ifconfig
+&lt;/code>&lt;/pre>&lt;/div>&lt;h5 id="设置网络为桥连网络">设置网络为桥连网络&lt;/h5>
+&lt;p>关机&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ shutdown -h now
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>打开虚拟机所对应的设置，配置好桥连网络并启动
+&lt;img src="http://blog.dcode.top/images/install-centos7-in-virtualbox/WX20180909-210529@2x.png"
+alt/>&lt;/p>
+&lt;h5 id="配置静态ipdns">配置静态IP/DNS&lt;/h5>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ vi /etc/sysconfig/network-scripts/ifcfg-enp0s3
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>配置如下：&lt;/p>
+&lt;pre>&lt;code class="language-properties" data-lang="properties">HWADDR=08:00:27:8D:90:F4
+TYPE=Ethernet
+BOOTPROTO=static #静态IP
+DEFROUTE=yes
+PEERDNS=yes
+PEERROUTES=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=yes
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_PEERDNS=yes
+IPV6_PEERROUTES=yes
+IPV6_FAILURE_FATAL=no
+NAME=enp0s3
+UUID=970a682c-0a14-4a74-a679-6cf19a09df85
+ONBOOT=yes #开机启动
+IPADDR0=192.168.31.180 #固定IP，这里要注意和其他电脑不要冲突
+GATEWAY0=192.168.31.1 #网关
+DNS1=192.168.31.1 #跟“宿主机”的DNS服务器一样
+DNS2=8.8.8.8 #使用谷歌的DNS服务器
+&lt;/code>&lt;/pre>&lt;p>配置完成后重启网卡&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ /etc/init.d/network restart
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>能ping通&lt;code>$ ping www.baidu.com&lt;/code>即配置成功&lt;/p>
+&lt;h5 id="安装ssh">安装SSH&lt;/h5>
+&lt;p>安装&lt;code>openssh-server&lt;/code>&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ yum install -y openssh-server
+&lt;/code>&lt;/pre>&lt;/div>&lt;h5 id="测试">测试&lt;/h5>
+&lt;p>宿主机用SSH进行连接&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ ssh root@192.168.31.180
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>启动正常，且每次启动都会是相同的IP了&lt;/p>
+&lt;h5 id="关闭防火墙">关闭防火墙&lt;/h5>
+&lt;p>如果在虚拟机中部署了网站，要在宿主机上访问，这就需要关闭虚拟机的防火墙或者开放端口&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="c1"># 查看防火墙状态&lt;/span>
+$ firewall-cmd --state
+&lt;span class="c1"># 重启防火墙&lt;/span>
+$ firewall-cmd --reload
+&lt;span class="c1"># 关闭防火墙&lt;/span>
+$ systemctl stop firewalld.service &lt;span class="c1">#停止firewall&lt;/span>
+$ systemctl disable firewalld.service &lt;span class="c1">#禁止firewall开机启动&lt;/span>
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>至此，虚拟机安装的教程就到这里了，如果在安装过程中有什么疑问，可直接在下面评论&lt;/p></description></item><item><title>Hexo实现远程VPS自动部署</title><link>http://blog.dcode.top/posts/02-hexo-deploy-vps/</link><pubDate>Sun, 02 Sep 2018 17:14:00 +0000</pubDate><guid>http://blog.dcode.top/posts/02-hexo-deploy-vps/</guid><description>&lt;h3 id="前言">前言&lt;/h3>
+&lt;p>Hexo&lt;a href="https://hexo.io/zh-cn/docs/deployment"target="_blank" rel="noopener noreferrer">官方文档&lt;/a>
+只是粗略的描述了一下，并且不支持自动部署，我的VPS上面是搭建了一个静态服务器，也就是将generate的public文件夹上传至网站目录，这样做的好处是网站是静态的，改了任何东西不需要重启，覆盖文件即可，但是每次改了东西要上传上去，麻烦，何不利用Hexo的deploy命令实现自动部署呢？&lt;/p>
+&lt;h3 id="正文">正文&lt;/h3>
+&lt;h4 id="实现ssh免密登陆">实现SSH免密登陆&lt;/h4>
+&lt;p>在开发环境生成利用&lt;code>ssh-keygen&lt;/code>生成公钥/私钥对
+打开Windows PowerShell或者terminal(Mac)，执行生成命令&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ ssh-keygen -t rsa
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>一路回车即可，公钥位置:&lt;code>C:\Users\xxx\.ssh\id_rsa.pub&lt;/code>&lt;/p>
+&lt;p>在VPS上面创建&lt;code>authorized_keys&lt;/code>文件&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ mkdir /root/.ssh &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> chmod &lt;span class="m">700&lt;/span> /root/.ssh
+$ touch /root/.ssh/authorized_keys &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> chmod &lt;span class="m">600&lt;/span> /root/.ssh/authorized_keys
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>然后将本地的&lt;code>id_rsa.pub&lt;/code>内容粘贴到&lt;code>authorized_keys&lt;/code>中
+或者&lt;/p>
+&lt;pre>&lt;code>$ cat ~/.ssh/id_rsa.pub | ssh root@x.x.x.x 'cat &amp;gt;&amp;gt; .ssh/authorized_keys'
+&lt;/code>&lt;/pre>&lt;p>本地测试是否可以免密登录&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ ssh -v root@x.x.x.x
+&lt;/code>&lt;/pre>&lt;/div>&lt;h4 id="vps配置">VPS配置&lt;/h4>
+&lt;p>VPS上面需要创建git裸仓库&lt;code>blog.git&lt;/code>&lt;/p>
+&lt;p>blog.git作为远程Git仓库，Hexo在本地生成的博客静态文件可以通过push与其同步&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ mkdir /root/blog.git &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="nb">cd&lt;/span> /root/blog.git
+$ git init --bare
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>配置Hooks脚本&lt;/p>
+&lt;p>post-receive脚本将在blog.git仓库接收到push时执行&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ vi /root/blog.git/hooks/post-receive
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>将一下内容粘贴进去&lt;/p>
+&lt;pre>&lt;code>#!/bin/bash
+rm -rf /var/www/blog
+git clone /root/blog.git /var/www/blog
+&lt;/code>&lt;/pre>&lt;p>注意：&lt;code>/var/www/blog&lt;/code>是网站静态资源的文件夹，也就是本地generate后的public文件夹替换的&lt;/p>
+&lt;p>给post-receive脚本执行权限&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ chmod +x /root/blog.git/hooks/post-receive
+&lt;/code>&lt;/pre>&lt;/div>&lt;h4 id="配置hexo自动部署">配置Hexo自动部署&lt;/h4>
+&lt;p>开发环境安装 hexo-deployer-git&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ npm install hexo-deployer-git --save
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>配置_config.yml文件&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-yml" data-lang="yml">&lt;span class="nt">deploy&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">type&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">git&lt;/span>&lt;span class="w">
+&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="nt">repo&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">root@88.88.88.88:blog.git&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;h4 id="测试">测试&lt;/h4>
+&lt;div class="highlight">&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">$ hexo clean &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> hero deploy
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>刷新网页看效果。&lt;/p>
+&lt;p>参考文章：
+&lt;a href="https://blog.fundebug.com/2017/05/18/deploy-hexo-on-cloud/"target="_blank" rel="noopener noreferrer">https://blog.fundebug.com/2017/05/18/deploy-hexo-on-cloud/&lt;/a>
+&lt;a href="http://www.swiftyper.com/2016/04/17/deploy-hexo-with-git-hook/"target="_blank" rel="noopener noreferrer">http://www.swiftyper.com/2016/04/17/deploy-hexo-with-git-hook/&lt;/a>
+&lt;/p></description></item></channel></rss>

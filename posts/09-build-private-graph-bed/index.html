@@ -1,0 +1,56 @@
+<!doctype html><html lang=en><meta charset=utf-8><meta name=generator content="Hugo 0.87.0"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name=color-scheme content="light dark">
+<meta name=supported-color-schemes content="light dark"><title>利用chevereto在VPS上搭建私有图床&nbsp;&ndash;&nbsp;Notepadium</title><link rel=stylesheet href=/css/core.min.6391195f7c0920b53937f5eed2bfc37b11cb7bd13a9b537ad5c0ff9634c07539facf25b4d549fa7fff38dd1551201e55.css integrity=sha384-Y5EZX3wJILU5N/Xu0r/DexHLe9E6m1N61cD/ljTAdTn6zyW01Un6f/843RVRIB5V><meta name=twitter:card content="summary">
+<meta name=twitter:title content="利用chevereto在VPS上搭建私有图床"><body><section id=header>
+<div class="header wrap"><span class="header left-side"><a class="site home" href=/><span class="site name">Notepadium</span></a></span>
+<span class="header right-side"><div class="nav wrap"><nav class=nav><a class="nav item" href=/categories/>Categories</a><a class="nav item" href=/tags/>Tags</a><a class="nav item" href=/about>About</a><a class="nav item" href=https://gohugo%2eio/ target=_blank rel="noopener noreferrer">Hugo</a></nav></div></span></div><div class="site slogan"><span class=title>100% JavaScript-free</span></div></section><section id=content><div class=article-container><section class="article header">
+<h1 class="article title">利用chevereto在VPS上搭建私有图床</h1><p class="article date">Sunday, December 2, 2018</p></section><article class="article markdown-body"><h3 id=前言>前言</h3>
+<p>除了使用公共的图床，也可以使用VPS去搭建自己的个人图床。自建图床可以存储自己收藏的图片，也可以创建一些加密的相册，这次要给你介绍的是 <a href=https://chevereto.com target=_blank rel="noopener noreferrer">Chevereto</a>
+这款超高颜值的图床程序。它可以非常简便的上传图片（支持多图上传）并自动生成代码链接供其他程序引用，支持使用外部储存，开放用户注册上传等。</p>
+<h3 id=正文>正文</h3>
+<h4 id=传统方式搭建>传统方式搭建</h4>
+<p>传统方式比较繁琐，这里推荐<a href=https://github.com/biezhi target=_blank rel="noopener noreferrer">biezhi</a>
+的教程<a href=https://gist.github.com/biezhi/f90923b48863c7d745481ccdd678ccab target=_blank rel="noopener noreferrer">自建图床chevereto</a>
+</p>
+<h4 id=使用docker搭建>使用Docker搭建</h4>
+<h5 id=首先需要准备mysqlhttpshubdockercomrlibrarymysql环境>首先需要准备<a href=https://hub.docker.com/r/library/mysql/ target=_blank rel="noopener noreferrer">mysql</a>
+环境</h5>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>$ docker run <span class=se>\
+</span><span class=se></span>    --name mysql <span class=se>\
+</span><span class=se></span>    -e <span class=nv>MYSQL_ROOT_PASSWORD</span><span class=o>=</span>my-secret-pw <span class=se>\
+</span><span class=se></span>    -e <span class=nv>MYSQL_DATABASE</span><span class=o>=</span>chevereto <span class=se>\
+</span><span class=se></span>    -e <span class=nv>MYSQL_USER</span><span class=o>=</span>chevereto <span class=se>\
+</span><span class=se></span>    -e <span class=nv>MYSQL_PASSWORD</span><span class=o>=</span>chevereto <span class=se>\
+</span><span class=se></span>    -d mysql:5.7 <span class=se>\
+</span><span class=se></span>    --character-set-server<span class=o>=</span>utf8mb4 <span class=se>\
+</span><span class=se></span>    --collation-server<span class=o>=</span>utf8mb4_unicode_ci
+</code></pre></div><h5 id=然后运行cheveretohttpshubdockercomrnmtanchevereto官方镜像>然后运行<a href=https://hub.docker.com/r/nmtan/chevereto/ target=_blank rel="noopener noreferrer">chevereto</a>
+官方镜像</h5>
+<div class=highlight><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell>$ docker run -it --name chevereto -d <span class=se>\
+</span><span class=se></span>    --link mysql:mysql <span class=se>\
+</span><span class=se></span>    -p 80:80 <span class=se>\
+</span><span class=se></span>    -v <span class=s2>&#34;</span><span class=nv>$PWD</span><span class=s2>/images&#34;</span>:/var/www/html/images <span class=se>\
+</span><span class=se></span>    -e <span class=s2>&#34;CHEVERETO_DB_HOST=</span><span class=k>$(</span>docker ps -f <span class=s2>&#34;name=mysql&#34;</span> -aq<span class=k>)</span><span class=s2>&#34;</span> <span class=se>\
+</span><span class=se></span>    -e <span class=s2>&#34;CHEVERETO_DB_USERNAME=chevereto&#34;</span> <span class=se>\
+</span><span class=se></span>    -e <span class=s2>&#34;CHEVERETO_DB_PASSWORD=chevereto&#34;</span> <span class=se>\
+</span><span class=se></span>    -e <span class=s2>&#34;CHEVERETO_DB_NAME=chevereto&#34;</span> <span class=se>\
+</span><span class=se></span>    -e <span class=s2>&#34;CHEVERETO_DB_PREFIX=chv_&#34;</span> <span class=se>\
+</span><span class=se></span>    nmtan/chevereto
+</code></pre></div><h5 id=小插曲>小插曲</h5>
+<p>访问<code>http://localhost</code>出现系统错误<code>No write permission in /images/ directory. Chevereto needs to be able to write in this directory.</code>
+<img src=/images/build-private-graph-bed/20181203122342.png alt>
+<code>/images/</code>目录中没有写权限，解决方案:</p>
+<ol>
+<li>进入chevereto容器<code>docker exec -it $(docker ps -f "name=chevereto" -aq) /bin/bash</code></li>
+<li>赋予<code>/images/</code>目录写入权限<code>chmod -R 222 /var/www/html/images/</code></li>
+<li>退出容器<code>exit</code>
+刷新网页，填写管理员信息即可使用
+<img src=/images/build-private-graph-bed/20181203122920.png alt></li>
+</ol>
+</article><section class="article labels"><a class=category href=/categories/tools/>tools</a><a class=tag href=/tags/chevereto/>chevereto</a></section>
+</div>
+<div class="article bottom"><section class="article navigation"><p><a class=link href=/posts/10-ssr-use-kcptun/><span class="iconfont icon-article"></span>利用kcptun加速你的SSR</a></p><p><a class=link href=/posts/08-hexo-auto-deploy-by-jenkins/><span class="iconfont icon-article"></span>Hexo通过jenkins实现自动部署</a></p></section></div></section><section id=footer><div class=footer-wrap>
+<p class=copyright>©2021 Notepadium.</p>
+<p class=powerby><span>Powered&nbsp;by&nbsp;</span><a href=https://gohugo.io target=_blank rel="noopener noreferrer">Hugo</a><span>&nbsp;&&nbsp;</span><a href=https://themes.gohugo.io/hugo-notepadium/ target=_blank rel="noopener noreferrer">Notepadium</a></p></div>
+</section></body>
+</html>

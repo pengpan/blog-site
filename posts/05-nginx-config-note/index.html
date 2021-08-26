@@ -1,0 +1,91 @@
+<!doctype html><html lang=en><meta charset=utf-8><meta name=generator content="Hugo 0.87.0"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name=color-scheme content="light dark">
+<meta name=supported-color-schemes content="light dark"><title>Nginx常用配置笔记&nbsp;&ndash;&nbsp;Notepadium</title><link rel=stylesheet href=/css/core.min.6391195f7c0920b53937f5eed2bfc37b11cb7bd13a9b537ad5c0ff9634c07539facf25b4d549fa7fff38dd1551201e55.css integrity=sha384-Y5EZX3wJILU5N/Xu0r/DexHLe9E6m1N61cD/ljTAdTn6zyW01Un6f/843RVRIB5V><meta name=twitter:card content="summary">
+<meta name=twitter:title content="Nginx常用配置笔记"><body><section id=header>
+<div class="header wrap"><span class="header left-side"><a class="site home" href=/><span class="site name">Notepadium</span></a></span>
+<span class="header right-side"><div class="nav wrap"><nav class=nav><a class="nav item" href=/categories/>Categories</a><a class="nav item" href=/tags/>Tags</a><a class="nav item" href=/about>About</a><a class="nav item" href=https://gohugo%2eio/ target=_blank rel="noopener noreferrer">Hugo</a></nav></div></span></div><div class="site slogan"><span class=title>100% JavaScript-free</span></div></section><section id=content><div class=article-container><section class="article header">
+<h1 class="article title">Nginx常用配置笔记</h1><p class="article date">Saturday, September 15, 2018</p></section><article class="article markdown-body"><h4 id=防止恶意解析>防止恶意解析</h4>
+<pre><code>server {
+  listen 80 default_server;
+  server_name _;
+  return 403;
+}
+server {
+  listen 443 default_server;
+  server_name _;
+  ssl on;
+  ssl_certificate        cert/fullchain.pem;
+  ssl_certificate_key    cert/privkey.pem;
+  return 403;
+}
+</code></pre><h4 id=开启压缩>开启压缩</h4>
+<pre><code>gzip on;
+gzip_min_length  1k;
+gzip_buffers     4 16k;
+gzip_http_version 1.1;
+gzip_comp_level 5;
+gzip_types     text/plain application/javascript application/x-javascript text/javascript text/css application/xml image/jpeg image/gif image/png;
+gzip_vary on;
+gzip_proxied   expired no-cache no-store private auth;
+gzip_disable   &quot;MSIE [1-6]\.&quot;;
+</code></pre><h4 id=去掉www>去掉www</h4>
+<pre><code>if ($host ~ '^www.9527.blog'){
+  return 301 https://9527.blog$request_uri;
+}
+</code></pre><h4 id=强制https>强制https</h4>
+<pre><code>if ($server_port !~ 443){
+    rewrite ^(/.*)$ https://$host$1 permanent;
+}
+</code></pre><h4 id=静态资源配置>静态资源配置</h4>
+<pre><code>location ~ .*\.(gif|jpg|jpeg|png|bmp|swf)$
+{
+    expires      30d;
+    error_log off;
+    access_log off;
+}
+
+location ~ .*\.(js|css)?$
+{
+    expires      12h;
+    error_log off;
+    access_log off; 
+}
+</code></pre><h4 id=防盗链配置>防盗链配置</h4>
+<pre><code>location ~ .*\.(jpg|jpeg|gif|png|js|css)$
+{
+    expires      30d;
+    access_log off;
+    valid_referers none blocked 9527.blog www.9527.blog;
+    if ($invalid_referer){
+       rewrite ^/ https://9527.blog;
+       #return 404;
+    }
+}
+</code></pre><h4 id=禁止访问的文件或目录>禁止访问的文件或目录</h4>
+<pre><code>location ~ ^/(\.user.ini|\.htaccess|\.git|\.svn|\.project|LICENSE|README.md)
+{
+    return 404;
+}
+</code></pre><h4 id=文件服务器>文件服务器</h4>
+<pre><code>location ~ .*\.(exe|dmg|zip|apk)$ {
+    root /www/wwwroot/files;
+    expires -1;
+}
+</code></pre><h4 id=流量控制>流量控制</h4>
+<pre><code>limit_conn perserver 500;   #限制当前站点最大并发数
+limit_conn perip 10;        #限制单个IP访问最大并发数
+limit_rate 2048k;           #限制每个请求的流量上限（单位：KB）
+</code></pre><p>本文为经验总结，如有不详之处，请参阅文档
+<a href=http://nginx.org/en/docs/ target=_blank rel="noopener noreferrer">官方文档</a>
+<a href=http://www.nginx.cn/doc/ target=_blank rel="noopener noreferrer">Nginx中文文档</a>
+<a href=https://tengine.taobao.org/nginx_docs/cn/docs/ target=_blank rel="noopener noreferrer">Nginx官方文档中文版</a>
+</p>
+<p>最后，推荐大家一个网站<a href=https://nginxconfig.io/ target=_blank rel="noopener noreferrer">nginxconfig.io</a>
+，上面有很多配置好了的nginx模板</p>
+</article><section class="article labels"><a class=category href=/categories/nginx/>nginx</a><a class=tag href=/tags/nginx/>nginx</a></section>
+</div>
+<div class="article bottom"><section class="article navigation"><p><a class=link href=/posts/06-springboot-jasypt-encryptor/><span class="iconfont icon-article"></span>SpringBoot使用jasypt加密配置文件</a></p><p><a class=link href=/posts/04-ngrok-tutorial/><span class="iconfont icon-article"></span>内网映射工具ngrok</a></p></section></div></section><section id=footer><div class=footer-wrap>
+<p class=copyright>©2021 Notepadium.</p>
+<p class=powerby><span>Powered&nbsp;by&nbsp;</span><a href=https://gohugo.io target=_blank rel="noopener noreferrer">Hugo</a><span>&nbsp;&&nbsp;</span><a href=https://themes.gohugo.io/hugo-notepadium/ target=_blank rel="noopener noreferrer">Notepadium</a></p></div>
+</section></body>
+</html>
